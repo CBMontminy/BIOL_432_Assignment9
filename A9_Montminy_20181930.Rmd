@@ -4,3 +4,80 @@ author: "Corbin Montminy"
 date: "2023-03-13"
 output: html_document
 ---
+
+# Loading packages
+```{r}
+library(doParallel)
+library(parallel)
+library(foreach)
+```
+
+# Detecting cores
+```{r}
+detectCores()
+```
+There are 8 cores on my device
+
+# Writing a for loop to calculate the mean of 100,000 random numbers, 4,000 times
+
+
+## means vector to store the means
+```{r}
+Means=c(1:4000)
+```
+
+
+Sys.time() function before and after are to track the time it takes to run the for loop
+
+```{r}
+Start=Sys.time()
+for (i in 1:4000) {
+  RandomNum=rnorm(100000, mean=10, sd=3)
+  Means[i]=mean(RandomNum)
+}
+Finish=Sys.time()
+```
+
+
+# Calculating time taken to run the for loop 
+```{r}
+Standard=Finish-Start
+Standard
+```
+Standard for loop took 33.27 seconds
+
+# Activating multi-threading by choosing to utilize 6 of 8 cores
+```{r}
+doParallel::registerDoParallel(6)
+```
+
+
+# Re-writing for loop as a parallel job, again with start and stop times
+```{r, include=F}
+Start2=Sys.time()
+foreach(i=1:4000, combine=rbind) %dopar%{
+  RandomNum=rnorm(100000, mean=10, sd=3)
+  Means[i]=mean(RandomNum)
+  print(i)
+}
+ 
+Finish2=Sys.time()
+```
+# Calculating time taken to run the parallel job 
+```{r}
+Parallel=Finish2-Start2
+Parallel
+```
+The parallel loop takes 16.20284 seconds
+
+```{r}
+Standard-Parallel
+```
+Even with the time taken to print each iteration number, the parallel loop is 17.07 seconds faster than the standard loop.  This makes sense because in the parallel loop, the processing is split up between 6 cores, meaning it can break up the 4000 iterations between the 6 cores and run iterations at the same time, hence the parallel. 
+
+# De-activating the cores
+NOTE: this function is used instead of stopCluster() because I was getting a strange error
+```{r}
+stopImplicitCluster()
+```
+
